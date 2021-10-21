@@ -11,7 +11,7 @@
 int main(int argc, char *argv[])
 {
     int numtasks, taskid, numworkers, source, dest, mtype, rows, averow, extra, offset, i, j, k, rc;
-    long double a[NR][NC], b[NC][NC], c[NR][NC];
+    long double a[NR][NC], b[NR][NC], c[NR][NC];
     double start, end, runtime;
     MPI_Status status;
 
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
             MPI_Send(&offset, 1, MPI_INT, dest, mtype, MPI_COMM_WORLD);
             MPI_Send(&rows, 1, MPI_INT, dest, mtype, MPI_COMM_WORLD);
             MPI_Send(&a[offset][0], rows * NC, MPI_LONG_DOUBLE, dest, mtype, MPI_COMM_WORLD);
-            MPI_Send(&b[offset][0], rows * NC, MPI_LONG_DOUBLE, dest, mtype, MPI_COMM_WORLD);
+            MPI_Send(&b[offset][0], NR * NC, MPI_LONG_DOUBLE, dest, mtype, MPI_COMM_WORLD);
             offset = offset + rows;
         }
 
@@ -87,19 +87,28 @@ int main(int argc, char *argv[])
         MPI_Recv(&offset, 1, MPI_INT, MASTER, mtype, MPI_COMM_WORLD, &status);
         MPI_Recv(&rows, 1, MPI_INT, MASTER, mtype, MPI_COMM_WORLD, &status);
         MPI_Recv(&a, rows * NC, MPI_LONG_DOUBLE, MASTER, mtype, MPI_COMM_WORLD, &status);
-        MPI_Recv(&b, rows * NC, MPI_LONG_DOUBLE, MASTER, mtype, MPI_COMM_WORLD, &status);
+        MPI_Recv(&b, NR * NC, MPI_LONG_DOUBLE, MASTER, mtype, MPI_COMM_WORLD, &status);
 
         char pro_name[MPI_MAX_PROCESSOR_NAME];
         int name_len;
         MPI_Get_processor_name(pro_name,&name_len);
         printf("\nWorking in Processor %s\n",pro_name);
-        
-        //mat addition
+
+        //mat multiplication
+
         for (k = 0; k < NC; k++)
+        {
             for (i = 0; i < rows; i++)
             {
-                c[i][k] = a[i][k] + b[i][k];
+                c[i][k] = 0.0;
+                for (j = 0; j < NC; j++)
+                {
+              
+                    c[i][k] += a[i][j] * b[j][k];
+              
+                }
             }
+        }
 
         mtype = FROM_WORKER;
         MPI_Send(&offset, 1, MPI_INT, MASTER, mtype, MPI_COMM_WORLD);
